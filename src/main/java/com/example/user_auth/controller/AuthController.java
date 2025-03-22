@@ -67,7 +67,7 @@ public class AuthController {
         guestInfo.put("id", guestUser.getId());
         guestInfo.put("username", guestUser.getUsername());
         guestInfo.put("role", guestUser.getRole());
-
+        guestInfo.put("token", generateToken(guestUser.getUsername()));
         return ResponseEntity
                 .status(200)
                 .body(new ApiResponse(true, "Guest login successful!", guestInfo));

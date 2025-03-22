@@ -14,6 +14,7 @@ import javax.net.ssl.*;
 import java.io.IOException;
 import java.security.cert.CertificateException;
 import java.util.concurrent.TimeUnit;
+import java.time.LocalDateTime;
 @Service
 public class GeminiApiService {
    private static final Logger logger = LoggerFactory.getLogger(GeminiApiService.class);
@@ -74,7 +75,8 @@ public class GeminiApiService {
                String geminiResponse = jsonNode.get("candidates").get(0).get("content").get("parts").get(0).get("text").asText();
                GeminiHistory history = new GeminiHistory();
                history.setPrompt(prompt);
-               history.setResponse(geminiResponse);
+               LocalDateTime now = LocalDateTime.now();
+               history.setDateTime(now);
                geminiHistoryRepository.save(history);
                return geminiResponse;
            } else {

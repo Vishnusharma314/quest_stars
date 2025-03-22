@@ -1,6 +1,7 @@
 package com.example.user_auth.model;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "gemini_history")
@@ -10,11 +11,11 @@ public class GeminiHistory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(length = 1000)
+    @Column(length = 2048)
     private String prompt;
 
-    @Column(length = 1000)
-    private String response;
+    @Column
+    private LocalDateTime dateTime;
 
     public Long getId() {
         return id;
@@ -32,11 +33,11 @@ public class GeminiHistory {
         this.prompt = prompt;
     }
 
-    public String getResponse() {
-        return response;
+    public LocalDateTime getDateTime() {
+        return dateTime;
     }
 
-    public void setResponse(String response) {
-        this.response = response;
+    public void setDateTime(LocalDateTime dateTime) {
+        this.dateTime = dateTime;
     }
 }

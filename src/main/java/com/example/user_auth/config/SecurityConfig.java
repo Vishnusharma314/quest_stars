@@ -29,7 +29,9 @@ public class SecurityConfig{
             .csrf(csrf -> csrf.disable()) // Disable CSRF for APIs
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/history", "/api/auth/gemini", "/api/auth/register", "/api/auth/login", "/api/auth/guest-login").permitAll() // Public APIs
+                .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll() // Allow OPTIONS
                 .anyRequest().authenticated() // Protect all other endpoints
+
             )
             .httpBasic(httpBasic -> httpBasic.disable()) // Disable HTTP Basic Authentication
             .formLogin(form -> form.disable()); // Disable form-based login
@@ -43,7 +45,7 @@ public class SecurityConfig{
         configuration.setAllowedOrigins(Arrays.asList("*")); // Allow all origins
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept"));
-        configuration.setAllowCredentials(true);
+        configuration.setAllowCredentials(false);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

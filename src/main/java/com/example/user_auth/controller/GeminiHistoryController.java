@@ -2,6 +2,7 @@ package com.example.user_auth.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import com.example.user_auth.repository.GeminiHistoryRepository;
@@ -10,6 +11,7 @@ import java.util.List;
 
 @RestController
 @CrossOrigin(origins = "*")
+@RequestMapping("/api/auth")
 public class GeminiHistoryController {
 
     private final GeminiHistoryRepository geminiHistoryRepository;
