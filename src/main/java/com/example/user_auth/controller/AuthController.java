@@ -3,8 +3,11 @@ package com.example.user_auth.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import com.example.user_auth.model.ArticleQuestion;
+import com.example.user_auth.model.GeminiHistory;
 import com.example.user_auth.model.User;
 import com.example.user_auth.model.UserToken;
 import com.example.user_auth.service.AuthService;
@@ -13,12 +16,15 @@ import com.example.user_auth.service.TokenUtils;
 import com.example.user_auth.dto.GeminiRequest;
 import com.example.user_auth.dto.UserRequest;
 import com.example.user_auth.dto.ApiResponse;
+import com.example.user_auth.dto.ArticleQuestionRequest;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import io.jsonwebtoken.Jwts;
+
+import com.example.user_auth.repository.GeminiHistoryRepository;
 import com.example.user_auth.repository.UserTokenRepository;
 import org.springframework.http.HttpHeaders;
 import org.slf4j.Logger;
@@ -33,13 +39,14 @@ public class AuthController {
     private final AuthService authService;
     private final GeminiApiService geminiApiService;
     private final TokenUtils tokenUtils;
+    private final GeminiHistoryRepository geminiHistoryRepository;
 
-
-    public AuthController(AuthService authService, GeminiApiService geminiApiService, UserTokenRepository userTokenRepository, TokenUtils tokenUtils) {
+    public AuthController(AuthService authService, GeminiApiService geminiApiService, UserTokenRepository userTokenRepository, TokenUtils tokenUtils, GeminiHistoryRepository geminiHistoryRepository) {
         this.authService = authService;
         this.geminiApiService = geminiApiService;
         this.userTokenRepository = userTokenRepository;
         this.tokenUtils = tokenUtils;
+        this.geminiHistoryRepository = geminiHistoryRepository;
     }
 
     // Common token validation method
@@ -65,6 +72,39 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/gemini-article")
+    public ResponseEntity<Object> processArticleAndQuestion(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader,
+            @RequestBody ArticleQuestionRequest request) {
+        String token = authorizationHeader.replace("Bearer ", "");  // Remove the "Bearer " prefix
+        Long userId = verifyToken(token);
+        if (userId != null) {
+            // Call your service and return the response as a String within ResponseEntity
+            String response = geminiApiService.processArticleAndQuestion(userId, request.getPubmedArticle(), request.getUserQuestion());
+            return ResponseEntity.ok(response);  // Return a successful response with status 200
+        } else {
+            // Error response
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Unauthorized User.");
+
+            return ResponseEntity.status(401).body(errorResponse);  // Return conflict status with the error message
+        }
+    }
+
+    @PostMapping("/gemini-article/history")
+    public ResponseEntity<List<ArticleQuestion>> getArticleQuestionHistory(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader) {
+        String token = authorizationHeader.replace("Bearer ", "");  // Remove the "Bearer " prefix
+        Long userId = verifyToken(token);
+        if (userId != null) {
+            List<ArticleQuestion> history = geminiApiService.getArticleQuestionHistory(userId);
+            return ResponseEntity.ok(history);  // Return a successful response with status 200
+        } else {
+            // Error response
+            return ResponseEntity.status(401).build();  // Return unauthorized status
+        }
+    }
 
     @PostMapping("/register")
     public ResponseEntity<Map<String, Object>> registerUser(@RequestBody UserRequest request) {
@@ -118,7 +158,7 @@ public class AuthController {
 
             // Save the token in the database
             saveToken(user.get().getId(), token);
-            
+
 
             return ResponseEntity
                     .status(200)
@@ -145,5 +185,24 @@ public class AuthController {
         userToken.setExpirationDate(new Date(System.currentTimeMillis() + 1000 * 60 * 60)); // 1 hour expiration
         userTokenRepository.save(userToken); // Assuming you have a repository for UserToken
     }
-}
 
+    @PostMapping("/history")
+    public ResponseEntity<Object> getAllHistory(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader) {
+        String token = authorizationHeader.replace("Bearer ", "");  // Remove the "Bearer " prefix
+        Long userId = verifyToken(token);
+        
+        if (userId != null) {
+            List<GeminiHistory> historyList = geminiHistoryRepository.findByUserId(userId);
+            
+            // Return the response with status 200 and the list of histories
+            return ResponseEntity.ok(historyList);
+        } else {
+            // If the token is invalid, return an error response
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Unauthorized User.");
+            
+            return ResponseEntity.status(401).body(errorResponse);  // Return 401 Unauthorized with the error message
+        }
+    }
+}

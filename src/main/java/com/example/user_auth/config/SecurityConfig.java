@@ -28,7 +28,7 @@ public class SecurityConfig{
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable()) // Disable CSRF for APIs
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/history", "/api/auth/gemini", "/api/auth/register", "/api/auth/login", "/api/auth/guest-login").permitAll() // Public APIs
+                .requestMatchers("/api/auth/history", "/api/auth/gemini", "/api/auth/gemini-article","/api/auth/gemini-article/history", "/api/auth/register", "/api/auth/login", "/api/auth/guest-login").permitAll() // Public APIs
                 .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll() // Allow OPTIONS
                 .anyRequest().authenticated() // Protect all other endpoints
 
