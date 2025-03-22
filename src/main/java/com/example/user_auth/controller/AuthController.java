@@ -56,6 +56,7 @@ public class AuthController {
 
     @PostMapping("/gemini")
     public ResponseEntity<Object> getGeminiResponse(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader, @RequestBody GeminiRequest request) {
+        System.out.println("Body: " + request);
         String token = authorizationHeader.replace("Bearer ", "");  // Remove the "Bearer " prefix
         Long userId = verifyToken(token);
         if (userId != null) {

@@ -27,7 +27,7 @@ public class GeminiApiService {
    private static final Logger logger = LoggerFactory.getLogger(GeminiApiService.class);
    @Value("${gemini.api.key}")
    private String geminiApiKey;
-   @Value("${gemini.api.url:https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent}")
+   @Value("${gemini.api.url:https://api.groq.com/openai/v1/chat/completions}")
    private String geminiApiUrl;
    // Modified client initialization
    private final OkHttpClient client = createUnsafeClient();
@@ -74,14 +74,15 @@ public class GeminiApiService {
        System.out.println("Prompt: " + appendedPrompt);
        logger.info("Full prompt being sent to Gemini API: {}", appendedPrompt);
        try {
-           MediaType mediaType = MediaType.parse("application/json");
-           String jsonPayload = String.format("{\"contents\":[{\"parts\":[{\"text\":\"%s\"}]}]}", appendedPrompt);
-           RequestBody body = RequestBody.create(jsonPayload, mediaType);
-           Request.Builder requestBuilder = new Request.Builder()
-                   .url(geminiApiUrl + "?key=" + geminiApiKey)
-                   .post(body);
-           Request request = requestBuilder.build();
-           logger.info("Sending request to Gemini API with prompt: {}", prompt);
+          MediaType mediaType = MediaType.parse("application/json");
+          String jsonPayload = String.format("{\"model\": \"llama-3.3-70b-versatile\", \"messages\": [{\"role\": \"user\", \"content\": \"%s\"}]}", appendedPrompt);
+          RequestBody body = RequestBody.create(jsonPayload, mediaType);
+          Request.Builder requestBuilder = new Request.Builder()
+                  .url(geminiApiUrl)
+                  .header("Authorization", "Bearer " + geminiApiKey)
+                  .post(body);
+          Request request = requestBuilder.build();
+          logger.info("Sending request to Gemini API with prompt: {}", prompt);
            Response response = client.newCall(request).execute();
            if (response.isSuccessful()) {
                String responseBody = response.body().string();
@@ -94,15 +95,24 @@ public class GeminiApiService {
                responseBody = responseBody.replace("`", "");
                responseBody = responseBody.replace("json", "");
                JsonNode jsonNode = objectMapper.readTree(responseBody);
-               String geminiResponse = jsonNode.get("candidates").get(0).get("content").get("parts").get(0).get("text").asText();
-               GeminiHistory history = new GeminiHistory();
-               history.setPrompt(prompt);
-               logger.info("User Id: {}", userId); 
-               history.setUserId(userId);
-               LocalDateTime now = LocalDateTime.now();
-               history.setDateTime(now);
-               geminiHistoryRepository.save(history);
-               return geminiResponse;
+               System.out.println("{Response Body: }" + responseBody);
+               logger.info("Response : {}", responseBody);
+               JsonNode choicesNode = jsonNode.get("choices");
+               if (choicesNode != null && choicesNode.isArray() && choicesNode.size() > 0) {
+                   JsonNode messageNode = choicesNode.get(0).get("message");
+                   if (messageNode != null) {
+                       String geminiResponse = messageNode.get("content").asText();
+                       GeminiHistory history = new GeminiHistory();
+                       history.setPrompt(prompt);
+                       logger.info("User Id: {}", userId);
+                       history.setUserId(userId);
+                       LocalDateTime now = LocalDateTime.now();
+                       history.setDateTime(now);
+                       geminiHistoryRepository.save(history);
+                       return geminiResponse;
+                   }
+               }
+               return "Error: Content not found in Gemini API response";
            } else {
                logger.error("Gemini API request failed with code: {} and message: {}", response.code(), response.message());
                throw new ResponseStatusException(
@@ -119,10 +129,11 @@ public class GeminiApiService {
         logger.info("Full prompt being sent to Gemini API: {}", fullPrompt);
         try {
             MediaType mediaType = MediaType.parse("application/json");
-            String jsonPayload = String.format("{\"contents\":[{\"parts\":[{\"text\":\"%s\"}]}]}", fullPrompt);
+            String jsonPayload = String.format("{\"model\": \"llama-3.3-70b-versatile\", \"messages\": [{\"role\": \"user\", \"content\": \"%s\"}]}", fullPrompt);
             RequestBody body = RequestBody.create(jsonPayload, mediaType);
             Request request = new Request.Builder()
-                    .url(geminiApiUrl + "?key=" + geminiApiKey)
+                    .url(geminiApiUrl)
+                    .header("Authorization", "Bearer " + geminiApiKey)
                     .post(body)
                     .build();
             logger.info("Sending request to Gemini API with prompt: {}", fullPrompt);
@@ -138,14 +149,22 @@ public class GeminiApiService {
                 responseBody = responseBody.replace("`", "");
                 responseBody = responseBody.replace("json", "");
                 JsonNode jsonNode = objectMapper.readTree(responseBody);
-                String geminiResponse = jsonNode.get("candidates").get(0).get("content").get("parts").get(0).get("text").asText();
-                ArticleQuestion articleQuestion = new ArticleQuestion();
-                articleQuestion.setPubmedArticle(pubmedArticle);
-                articleQuestion.setUserQuestion(userQuestion);
-                articleQuestion.setUserId(userId);
-                articleQuestion.setCreatedAt(LocalDateTime.now());
-                articleQuestionRepository.save(articleQuestion);
-                return geminiResponse;
+                JsonNode choicesNode = jsonNode.get("choices");
+                if (choicesNode != null && choicesNode.isArray() && choicesNode.size() > 0) {
+                    JsonNode messageNode = choicesNode.get(0).get("message");
+                    if (messageNode != null) {
+                        String geminiResponse = messageNode.get("content").asText();
+                        ArticleQuestion articleQuestion = new ArticleQuestion();
+                        articleQuestion.setPubmedArticle(pubmedArticle);
+                        articleQuestion.setUserQuestion(userQuestion);
+                        articleQuestion.setUserId(userId);
+                        articleQuestion.setCreatedAt(LocalDateTime.now());
+                        articleQuestionRepository.save(articleQuestion);
+                        return geminiResponse;
+                    }
+                }
+                return "Error: Content not found in Gemini API response";
+
             } else {
                 logger.error("Gemini API request failed with code: {} and message: {}", response.code(), response.message());
                 throw new ResponseStatusException(
