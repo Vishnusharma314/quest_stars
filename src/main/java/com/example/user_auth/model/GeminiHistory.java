@@ -1,4 +1,4 @@
-package com.example.user_auth;
+package com.example.user_auth.model;
 
 import jakarta.persistence.*;
 

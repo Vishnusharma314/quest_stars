@@ -22,7 +22,7 @@ public class SecurityConfig{
         http
             .csrf(csrf -> csrf.disable()) // Disable CSRF for APIs
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/guest-login").permitAll() // Public APIs
+                .requestMatchers("/api/auth/history", "/api/auth/gemini", "/api/auth/register", "/api/auth/login", "/api/auth/guest-login").permitAll() // Public APIs
                 .anyRequest().authenticated() // Protect all other endpoints
             )
             .httpBasic(httpBasic -> httpBasic.disable()) // Disable HTTP Basic Authentication

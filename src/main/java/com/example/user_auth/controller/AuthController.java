@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.Optional;
 import com.example.user_auth.model.User;
 import com.example.user_auth.service.AuthService;
+import com.example.user_auth.service.GeminiApiService;
+import com.example.user_auth.dto.GeminiRequest;
 import com.example.user_auth.dto.ApiResponse;
 
 @RestController
@@ -14,9 +16,18 @@ import com.example.user_auth.dto.ApiResponse;
 public class AuthController {
 
     private final AuthService authService;
+    private final GeminiApiService geminiApiService;
 
-    public AuthController(AuthService authService) {
+
+    public AuthController(AuthService authService, GeminiApiService geminiApiService) {
         this.authService = authService;
+        this.geminiApiService = geminiApiService;
+    }
+
+
+    @PostMapping("/gemini")
+    public String getGeminiResponse(@RequestBody GeminiRequest request) {
+        return geminiApiService.getGeminiResponse(request.getPrompt());
     }
 
     @PostMapping("/register")

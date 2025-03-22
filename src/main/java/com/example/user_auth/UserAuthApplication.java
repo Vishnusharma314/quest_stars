@@ -11,8 +11,8 @@ public class UserAuthApplication {
 		SpringApplication.run(UserAuthApplication.class, args);
 	}
 
-	@Bean
-    public GeminiApiService geminiApiService(GeminiHistoryRepository geminiHistoryRepository) {
-        return new GeminiApiService(geminiHistoryRepository);
-    }
+	// @Bean
+    // public GeminiApiService geminiApiService(GeminiHistoryRepository geminiHistoryRepository) {
+    //     return new GeminiApiService(geminiHistoryRepository);
+    // }
 }
