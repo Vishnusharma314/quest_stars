@@ -58,9 +58,12 @@ public class GeminiApiService {
        }
    }
    public String getGeminiResponse(String prompt, Long userId) {
+    String appendedPrompt = prompt + " and respond strictly in JSON format with only these params report_summary, therapeutic_implications, therapy_response_prediction (with numeric in these child params: parp_inhibitors_sensitivity,platinum_based_chemotherapy_sensitivity, immunotherapy_response). Do not include any other untold child params";
+       
+       logger.info("Full prompt being sent to Gemini API: {}", appendedPrompt);
        try {
            MediaType mediaType = MediaType.parse("application/json");
-           String jsonPayload = String.format("{\"contents\":[{\"parts\":[{\"text\":\"%s\"}]}]}", prompt);
+           String jsonPayload = String.format("{\"contents\":[{\"parts\":[{\"text\":\"%s\"}]}]}", appendedPrompt);
            RequestBody body = RequestBody.create(jsonPayload, mediaType);
            Request request = new Request.Builder()
                    .url(geminiApiUrl + "?key=" + geminiApiKey)
@@ -71,7 +74,15 @@ public class GeminiApiService {
            if (response.isSuccessful()) {
                String responseBody = response.body().string();
                logger.debug("Gemini API response: {}", responseBody);
-               
+
+               // Trim "json" and backticks from the beginning and end of the response
+               responseBody = responseBody.trim();
+               if (responseBody.startsWith("json")) {
+                   responseBody = responseBody.substring(4).trim();
+               }
+               responseBody = responseBody.replace("`", "");
+               responseBody = responseBody.replace("json", "");
+
                JsonNode jsonNode = objectMapper.readTree(responseBody);
                String geminiResponse = jsonNode.get("candidates").get(0).get("content").get("parts").get(0).get("text").asText();
                GeminiHistory history = new GeminiHistory();
