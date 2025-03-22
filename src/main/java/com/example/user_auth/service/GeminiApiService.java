@@ -57,7 +57,7 @@ public class GeminiApiService {
            throw new RuntimeException("Failed to create unsafe OkHttpClient", e);
        }
    }
-   public String getGeminiResponse(String prompt) {
+   public String getGeminiResponse(String prompt, Long userId) {
        try {
            MediaType mediaType = MediaType.parse("application/json");
            String jsonPayload = String.format("{\"contents\":[{\"parts\":[{\"text\":\"%s\"}]}]}", prompt);
@@ -71,10 +71,13 @@ public class GeminiApiService {
            if (response.isSuccessful()) {
                String responseBody = response.body().string();
                logger.debug("Gemini API response: {}", responseBody);
+               
                JsonNode jsonNode = objectMapper.readTree(responseBody);
                String geminiResponse = jsonNode.get("candidates").get(0).get("content").get("parts").get(0).get("text").asText();
                GeminiHistory history = new GeminiHistory();
                history.setPrompt(prompt);
+               logger.info("User Id: {}", userId); 
+               history.setUserId(userId);
                LocalDateTime now = LocalDateTime.now();
                history.setDateTime(now);
                geminiHistoryRepository.save(history);

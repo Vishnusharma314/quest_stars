@@ -13,12 +13,11 @@ public class TokenUtils {
     @Autowired
     private UserTokenRepository userTokenRepository;
 
-    public boolean isTokenValid(String token) {
+    public Long isTokenValid(String token) {
         UserToken userToken = userTokenRepository.findByToken(token);
-        if (userToken == null) {
-            return false;
-        }
-        Date expirationDate = userToken.getExpirationDate();
-        return expirationDate != null && expirationDate.after(new Date());
+        if (userToken == null || userToken.getExpirationDate().before(new Date())) {
+            return null;  // Invalid token or expired
+        }       
+        return userToken.getUserId();  // Assuming UserToken has a method to get userId
     }
 }

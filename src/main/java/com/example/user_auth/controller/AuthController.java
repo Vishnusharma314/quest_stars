@@ -21,12 +21,14 @@ import java.util.Date;
 import io.jsonwebtoken.Jwts;
 import com.example.user_auth.repository.UserTokenRepository;
 import org.springframework.http.HttpHeaders;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
-
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
     private UserTokenRepository userTokenRepository;
     private final AuthService authService;
     private final GeminiApiService geminiApiService;
@@ -41,17 +43,17 @@ public class AuthController {
     }
 
     // Common token validation method
-    private boolean verifyToken(String token) {
+    private Long verifyToken(String token) {
         return tokenUtils.isTokenValid(token);
     }
 
     @PostMapping("/gemini")
     public ResponseEntity<Object> getGeminiResponse(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader, @RequestBody GeminiRequest request) {
         String token = authorizationHeader.replace("Bearer ", "");  // Remove the "Bearer " prefix
-
-        if (verifyToken(token)) {
+        Long userId = verifyToken(token);
+        if (userId != null) {
             // Call your service and return the response as a String within ResponseEntity
-            String response = geminiApiService.getGeminiResponse(request.getPrompt());
+            String response = geminiApiService.getGeminiResponse(request.getPrompt(), userId);
             return ResponseEntity.ok(response);  // Return a successful response with status 200
         } else {
             // Error response
