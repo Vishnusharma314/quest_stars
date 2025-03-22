@@ -76,7 +76,6 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<ApiResponse> loginUser(@RequestBody UserRequest request) {
         Optional<User> user = authService.findByUsername(request.getUsername());
-
         if (user.isPresent() && authService.checkPassword(request.getPassword(), user.get().getPassword())) {
             Map<String, Object> userInfo = new HashMap<>();
             userInfo.put("id", user.get().getId());
