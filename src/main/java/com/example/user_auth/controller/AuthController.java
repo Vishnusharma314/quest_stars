@@ -193,7 +193,7 @@ public class AuthController {
         Long userId = verifyToken(token);
         
         if (userId != null) {
-            List<GeminiHistory> historyList = geminiHistoryRepository.findByUserId(userId);
+            List<GeminiHistory> historyList = geminiHistoryRepository.findByUserIdOrderByIdDesc(userId);
             
             // Return the response with status 200 and the list of histories
             return ResponseEntity.ok(historyList);
