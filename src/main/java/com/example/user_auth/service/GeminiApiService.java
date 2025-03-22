@@ -131,11 +131,11 @@ public class GeminiApiService {
             MediaType mediaType = MediaType.parse("application/json");
             String jsonPayload = String.format("{\"model\": \"llama-3.3-70b-versatile\", \"messages\": [{\"role\": \"user\", \"content\": \"%s\"}]}", fullPrompt);
             RequestBody body = RequestBody.create(jsonPayload, mediaType);
-            Request request = new Request.Builder()
+            Request.Builder requestBuilder = new Request.Builder()
                     .url(geminiApiUrl)
                     .header("Authorization", "Bearer " + geminiApiKey)
-                    .post(body)
-                    .build();
+                    .post(body);
+            Request request = requestBuilder.build();
             logger.info("Sending request to Gemini API with prompt: {}", fullPrompt);
             Response response = client.newCall(request).execute();
             if (response.isSuccessful()) {
