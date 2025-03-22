@@ -6,8 +6,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import com.example.user_auth.model.User;
+import com.example.user_auth.model.UserToken;
 import com.example.user_auth.service.AuthService;
 import com.example.user_auth.service.GeminiApiService;
+import com.example.user_auth.service.TokenUtils;
 import com.example.user_auth.dto.GeminiRequest;
 import com.example.user_auth.dto.UserRequest;
 import com.example.user_auth.dto.ApiResponse;
@@ -17,25 +19,50 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import io.jsonwebtoken.Jwts;
+import com.example.user_auth.repository.UserTokenRepository;
+import org.springframework.http.HttpHeaders;
+
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
 
+    private UserTokenRepository userTokenRepository;
     private final AuthService authService;
     private final GeminiApiService geminiApiService;
+    private final TokenUtils tokenUtils;
 
 
-    public AuthController(AuthService authService, GeminiApiService geminiApiService) {
+    public AuthController(AuthService authService, GeminiApiService geminiApiService, UserTokenRepository userTokenRepository, TokenUtils tokenUtils) {
         this.authService = authService;
         this.geminiApiService = geminiApiService;
+        this.userTokenRepository = userTokenRepository;
+        this.tokenUtils = tokenUtils;
     }
 
+    // Common token validation method
+    private boolean verifyToken(String token) {
+        return tokenUtils.isTokenValid(token);
+    }
 
     @PostMapping("/gemini")
-    public String getGeminiResponse(@RequestBody GeminiRequest request) {
-        return geminiApiService.getGeminiResponse(request.getPrompt());
+    public ResponseEntity<Object> getGeminiResponse(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader, @RequestBody GeminiRequest request) {
+        String token = authorizationHeader.replace("Bearer ", "");  // Remove the "Bearer " prefix
+
+        if (verifyToken(token)) {
+            // Call your service and return the response as a String within ResponseEntity
+            String response = geminiApiService.getGeminiResponse(request.getPrompt());
+            return ResponseEntity.ok(response);  // Return a successful response with status 200
+        } else {
+            // Error response
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Unauthorized User.");
+
+            return ResponseEntity.status(401).body(errorResponse);  // Return conflict status with the error message
+        }
     }
+
 
     @PostMapping("/register")
     public ResponseEntity<Map<String, Object>> registerUser(@RequestBody UserRequest request) {
@@ -67,7 +94,10 @@ public class AuthController {
         guestInfo.put("id", guestUser.getId());
         guestInfo.put("username", guestUser.getUsername());
         guestInfo.put("role", guestUser.getRole());
-        guestInfo.put("token", generateToken(guestUser.getUsername()));
+        String token = generateToken(guestUser.getUsername());
+        guestInfo.put("token", token);
+        // Save the token in the database
+        saveToken(guestUser.getId(), token);
         return ResponseEntity
                 .status(200)
                 .body(new ApiResponse(true, "Guest login successful!", guestInfo));
@@ -81,7 +111,11 @@ public class AuthController {
             userInfo.put("id", user.get().getId());
             userInfo.put("username", user.get().getUsername());
             userInfo.put("role", user.get().getRole());
-            userInfo.put("token", generateToken(user.get().getUsername()));
+            String token = generateToken(user.get().getUsername());
+            userInfo.put("token", token);
+
+            // Save the token in the database
+            saveToken(user.get().getId(), token);
             
 
             return ResponseEntity
@@ -100,6 +134,14 @@ public class AuthController {
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60))
                 .compact();
+    }
+
+    private void saveToken(Long userId, String token) {
+        UserToken userToken = new UserToken();
+        userToken.setUserId(userId);
+        userToken.setToken(token);
+        userToken.setExpirationDate(new Date(System.currentTimeMillis() + 1000 * 60 * 60)); // 1 hour expiration
+        userTokenRepository.save(userToken); // Assuming you have a repository for UserToken
     }
 }
 
